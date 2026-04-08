@@ -39,7 +39,7 @@ const transporter = mailer.createTransport({
 const storage = multer.diskStorage({
     destination: "Studentdata/",
     filename: (req, file, cb) => {
-        cb(null, file.originalname + '_' +Date.now()+path.extname(file.originalname));
+        cb(null, path.parse(file.originalname).name + '_' +Date.now()+path.extname(file.originalname));
     }
 });
 
@@ -93,7 +93,7 @@ app.post("/register", upload.single("aadharimage"), async (req, res) => {
 
             await con.query(
                 "insert into student_qualification(StudentId,QualificationName,University,PassingYear,Medium,Percentage) values(?,?,?,?,?,?)",
-                [studentId,q.qualification,q.university,q.year,q.medium,q.percentage]
+                [studentId,q.qualification_name,q.university_name,q.passing_year,q.medium,q.percentage]
             );
         }
 
