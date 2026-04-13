@@ -138,12 +138,9 @@ app.post("/register", upload.single("aadharimage"), async (req, res) => {
 });
 app.post("/login", async (req, res) => {
     try {
-        const { emailaddress, password } = req.body;
+        const d = req.body;
 
-        const [result] = await con.query(
-            "SELECT * FROM student_profile WHERE EmailAddress=? AND Password=?",
-            [emailaddress, password]
-        );
+        const [result] = await con.query("SELECT * FROM student_profile WHERE EmailAddress=? AND Password=?",[d.emailaddress, d.password]);
 
         if (result.length === 0) {
             return res.status(401).send({ message: "Invalid credentials" });
@@ -153,11 +150,10 @@ app.post("/login", async (req, res) => {
 
         const token = jwt.sign(
             { id: user.StudentId, email: user.EmailAddress },
-            "secretkey",
+            "vikas123",
             { expiresIn: "1d" }
         );
-
-        res.cookie("token", token, {
+        res.cookie("tokenn", token, {
             httpOnly: true,
             secure: false,
             sameSite: "lax",
@@ -172,14 +168,14 @@ app.post("/login", async (req, res) => {
     }
 });
 app.get("/verify", (req, res) => {
-    const token = req.cookies.token;
+    const token = req.cookies.tokenn;
 
     if (!token) {
         return res.status(401).send("No token");
     }
 
     try {
-        jwt.verify(token, "secretkey");
+        jwt.verify(token, "vikas123");
         res.status(200).send("Valid user");
     } catch (err) {
         res.status(401).send("Invalid token");
