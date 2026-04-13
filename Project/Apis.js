@@ -151,7 +151,7 @@ app.post("/login", async (req, res) => {
         const token = jwt.sign(
             { id: user.StudentId, email: user.EmailAddress },
             "vikas123",
-            { expiresIn: "1d" }
+            { expiresIn: "30d" }
         );
         res.cookie("tokenn", token, {
             httpOnly: true,
