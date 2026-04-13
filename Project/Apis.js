@@ -4,12 +4,18 @@ const multer = require("multer");
 const mysql = require("mysql2");
 const cors = require("cors");
 const path = require("path");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 
 const PORT = 9000;
 const app = express();
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true
+}));
+app.use(cookieParser());
 
 const connection = mysql.createConnection({
     host:"localhost",
@@ -130,7 +136,55 @@ app.post("/register", upload.single("aadharimage"), async (req, res) => {
     }
     
 });
+app.post("/login", async (req, res) => {
+    try {
+        const { emailaddress, password } = req.body;
 
+        const [result] = await con.query(
+            "SELECT * FROM student_profile WHERE EmailAddress=? AND Password=?",
+            [emailaddress, password]
+        );
+
+        if (result.length === 0) {
+            return res.status(401).send({ message: "Invalid credentials" });
+        }
+
+        const user = result[0];
+
+        const token = jwt.sign(
+            { id: user.StudentId, email: user.EmailAddress },
+            "secretkey",
+            { expiresIn: "1d" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false,
+            sameSite: "lax",
+            maxAge: 30 * 24 * 60 * 60 * 1000
+        });
+
+        res.status(200).send({ message: "Login successful" });
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).send({ message: "Login error" });
+    }
+});
+app.get("/verify", (req, res) => {
+    const token = req.cookies.token;
+
+    if (!token) {
+        return res.status(401).send("No token");
+    }
+
+    try {
+        jwt.verify(token, "secretkey");
+        res.status(200).send("Valid user");
+    } catch (err) {
+        res.status(401).send("Invalid token");
+    }
+});
 app.listen(PORT,function(){
     console.log(`Server started on ${PORT}`)
 })
