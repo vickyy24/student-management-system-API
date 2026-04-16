@@ -11,8 +11,9 @@ const PORT = 9000;
 const app = express();
 
 app.use(express.json());
+
 app.use(cors({
-    origin: true,
+    origin: "http://localhost:3000",
     credentials: true
 }));
 app.use(cookieParser());
@@ -177,6 +178,26 @@ app.get("/verify", (req, res) => {
     try {
         jwt.verify(token, "vikas123");
         res.status(200).send("Valid user");
+    } catch (err) {
+        res.status(401).send("Invalid token");
+    }
+});
+app.get("/dashboard-details", async(req, res) => {
+    const toke = req.cookies.tokenn;
+
+    if (!toke) {
+        return res.status(401).send("Unauthorized");
+    }
+
+    try {
+        const decoded = jwt.verify(toke, "vikas123");
+
+        const [result]= await con.query(
+            `SELECT sp.StudentId,rd.CourseName,rd.FinalFee,sp.RegistrationDate,pd.PaymentDate,pd.PaymentAmount,pd.PaymentMode FROM student_profile sp
+            JOIN registration_details rd ON rd.StudentId = sp.StudentId JOIN payment_details pd ON pd.StudentId = sp.StudentId
+            WHERE sp.StudentId = ?`,[decoded.id]
+        )
+       return  res.send(result);
     } catch (err) {
         res.status(401).send("Invalid token");
     }
