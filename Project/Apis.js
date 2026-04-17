@@ -61,15 +61,28 @@ app.get("/coursesdd", async function (req, res) {
         console.log("Error fetching courses", err);
         res.status(500).send({ message: "DB Error" });
     }
-    // await con.query("SELECT * FROM courses", function (err, result) {
-    //     if (err) {
-    //         console.log("Error fetching courses", err);
-    //         res.status(500).send({ message: "DB Error" });
-    //     } 
-    //     else {
-    //         res.send(result);
-    //     }
-    // });
+});
+
+//user existance in DB check-up
+app.post("/check-user", async (req, res) => {
+    try {
+        const d = req.body;
+
+        const [result] = await con.query(
+            "SELECT * FROM student_profile WHERE EmailAddress=? OR MobileNumber=? OR AadharNumber=?",
+            [d.emailaddress, d.mobilenumber]
+        );
+
+        if (result.length > 0) {
+            res.status(400).send({ message: "User already exists" });
+        } else {
+            res.status(200).send({ message: "User not exists" });
+        }
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).send({ message: "Server error" });
+    }
 });
 
 // Registration Api
