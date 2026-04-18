@@ -206,7 +206,7 @@ app.get("/dashboard-details", async(req, res) => {
         const decoded = jwt.verify(toke, "vikas123");
 
         const [result]= await con.query(
-            `SELECT sp.StudentId,rd.CourseName,rd.FinalFee,sp.RegistrationDate,pd.PaymentDate,pd.PaymentAmount,pd.PaymentMode FROM student_profile sp
+            `SELECT sp.StudentId,concat(sp.FirstName," ",sp.LastName) as FullName,sp.FirstName,rd.CourseName,rd.FinalFee,sp.RegistrationDate,pd.PaymentDate,pd.PaymentAmount,pd.PaymentMode FROM student_profile sp
             JOIN registration_details rd ON rd.StudentId = sp.StudentId JOIN payment_details pd ON pd.StudentId = sp.StudentId
             WHERE sp.StudentId = ?`,[decoded.id]
         )
@@ -214,6 +214,92 @@ app.get("/dashboard-details", async(req, res) => {
     } catch (err) {
         res.status(401).send("Invalid token");
     }
+});
+
+//Fetch Profile details
+app.get("/student-details", async(req,res)=>{
+    const Token = req.cookies.tokenn;
+
+    if(!Token){
+        return res.status(401).send("Unauthorized");
+    }
+
+    try{
+        const decoded = jwt.verify(Token, "vikas123"); 
+        const [result] = await con.query(
+            `select sp.StudentId, sp.FirstName,sp.LastName,sp.Gender,sq.QId,sq.QualificationName,sp.EmailAddress,DATE_FORMAT(sp.BirthDate, '%Y-%m-%d') as BirthDate,sp.MobileNumber,
+            sp.WhatsappNumber,sp.ParentName,sp.ParentNumber,sp.AadharNumber,sp.LocalAddress,sp.PermanentAddress 
+            from student_profile sp join student_qualification sq 
+            on sp.StudentId=sq.StudentId where sp.StudentId =?`,[decoded.id]
+        )
+        res.send(result)
+    }catch(err){
+        res.status(401).send("Invalid")
+    }
+})
+
+//Update Profile details
+app.put("/update-profile", async (req, res) => {
+    const Token = req.cookies.tokenn;
+
+    if (!Token) {
+        return res.status(401).send("Unauthorized");
+    }
+
+    try {
+        const decoded = jwt.verify(Token, "vikas123");
+
+        const d = req.body;
+
+        await con.query(
+            `UPDATE student_profile SET 
+                FirstName = ?, 
+                LastName = ?, 
+                Gender = ?, 
+                BirthDate = ?, 
+                EmailAddress = ?, 
+                MobileNumber = ?, 
+                WhatsappNumber = ?, 
+                ParentName = ?, 
+                ParentNumber = ?, 
+                AadharNumber = ?, 
+                LocalAddress = ?, 
+                PermanentAddress = ?
+            WHERE StudentId = ?`,
+            [
+                d.fname,
+                d.lname,
+                d.gender,
+                d.dob,
+                d.email,
+                d.mobile,
+                d.whatsapp,
+                d.parentName,
+                d.parentNumber,
+                d.aadhar,
+                d.localAddress,
+                d.permanentAddress,
+                decoded.id
+            ]
+        );
+
+        res.status(200).send({ message: "Profile Updated Successfully" });
+
+    } catch (err) {
+        console.log(err);
+        res.status(500).send({ message: "Update Failed" });
+    }
+});
+
+//Logout
+app.get("/logout", (req, res) => {
+    res.clearCookie("tokenn", {
+        httpOnly: true,
+        sameSite: "lax",
+        secure: false
+    });
+
+    res.status(200).send({ message: "Logged out" });
 });
 app.listen(PORT,function(){
     console.log(`Server started on ${PORT}`)
