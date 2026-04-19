@@ -252,35 +252,9 @@ app.put("/update-profile", async (req, res) => {
         const d = req.body;
 
         await con.query(
-            `UPDATE student_profile SET 
-                FirstName = ?, 
-                LastName = ?, 
-                Gender = ?, 
-                BirthDate = ?, 
-                EmailAddress = ?, 
-                MobileNumber = ?, 
-                WhatsappNumber = ?, 
-                ParentName = ?, 
-                ParentNumber = ?, 
-                AadharNumber = ?, 
-                LocalAddress = ?, 
-                PermanentAddress = ?
-            WHERE StudentId = ?`,
-            [
-                d.fname,
-                d.lname,
-                d.gender,
-                d.dob,
-                d.email,
-                d.mobile,
-                d.whatsapp,
-                d.parentName,
-                d.parentNumber,
-                d.aadhar,
-                d.localAddress,
-                d.permanentAddress,
-                decoded.id
-            ]
+            `UPDATE student_profile SET FirstName = ?, LastName = ?, Gender = ?, BirthDate = ?, EmailAddress = ?, MobileNumber = ?, 
+            WhatsappNumber = ?, ParentName = ?, ParentNumber = ?, AadharNumber = ?, LocalAddress = ?, PermanentAddress = ?
+            WHERE StudentId = ?`,[d.fname, d.lname,d.gender,d.dob,d.email,d.mobile,d.whatsapp,d.parentName,d.parentNumber,d.aadhar,d.localAddress,d.permanentAddress, decoded.id]
         );
 
         res.status(200).send({ message: "Profile Updated Successfully" });
