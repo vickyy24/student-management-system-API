@@ -275,6 +275,52 @@ app.get("/logout", (req, res) => {
 
     res.status(200).send({ message: "Logged out" });
 });
+
+//Passqord Change
+app.post("/change-password", async (req, res) => {
+
+    const token = req.cookies.tokenn;
+
+    if (!token) {
+        res.status(401).send({ message: "Unauthorized" });
+    } 
+    else {
+        try {
+            const decoded = jwt.verify(token, "vikas123");
+
+            const oldPassword = req.body.oldPassword;
+            const newPassword = req.body.newPassword;
+
+            const [result] = await con.query(
+                "SELECT Password FROM student_profile WHERE StudentId = ?",
+                [decoded.id]
+            );
+
+            if (result.length === 0) {
+                res.status(404).send({ message: "User not found" });
+            } 
+            else {
+
+                if (result[0].Password !== oldPassword) {
+                    res.status(400).send({ message: "Old password is incorrect" });
+                } 
+                else {
+
+                    await con.query(
+                        "UPDATE student_profile SET Password = ? WHERE StudentId = ?",
+                        [newPassword, decoded.id]
+                    );
+
+                    res.send({ message: "Password updated successfully" });
+                }
+            }
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).send({ message: "Server error" });
+        }
+    }
+});
 app.listen(PORT,function(){
     console.log(`Server started on ${PORT}`)
 })
