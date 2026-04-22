@@ -8,6 +8,17 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 
+// For developers cloning this project:
+// Upload folders are gitignored, so they are not present in the repo.
+// Create them at runtime to avoid file upload errors.
+if (!fs.existsSync("ProfileImages")) {
+    fs.mkdirSync("ProfileImages");
+}
+
+if (!fs.existsSync("Studentdata")) {
+    fs.mkdirSync("Studentdata");
+}
+
 const PORT = 9000;
 const app = express();
 

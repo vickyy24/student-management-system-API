@@ -1,7 +1,4 @@
 /node_modules
 
-ProfileImages/*
-!ProfileImages/.gitkeep
-
-Studentdata/*
-!Studentdata/.gitkeep
+ProfileImages/
+Studentdata/
