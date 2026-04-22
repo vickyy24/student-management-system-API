@@ -4,6 +4,7 @@ const multer = require("multer");
 const mysql = require("mysql2");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 
@@ -17,6 +18,7 @@ app.use(cors({
     credentials: true
 }));
 app.use(cookieParser());
+app.use("/profile-image", express.static("ProfileImages"));
 
 const connection = mysql.createConnection({
     host:"localhost",
@@ -34,6 +36,8 @@ connection.connect(function(err){
     }
 })
 const con = connection.promise();
+
+
 const transporter = mailer.createTransport({
     service: "gmail",
     auth: {
@@ -42,15 +46,23 @@ const transporter = mailer.createTransport({
     }
 });
 
-//multer
+//aadharimage storage
 const storage = multer.diskStorage({
     destination: "Studentdata/",
     filename: (req, file, cb) => {
         cb(null, path.parse(file.originalname).name + '_' +Date.now()+path.extname(file.originalname));
     }
 });
-
 const upload = multer({ storage });
+
+//profileimage storage
+const storageImage = multer.diskStorage({
+    destination: "ProfileImages/",
+    filename: (req, file, cb) => {
+        cb(null, path.parse(file.originalname).name + '_' +Date.now()+path.extname(file.originalname));
+    }
+});
+const uploadImage = multer({ storage: storageImage });
 
 //CourseDropdown Api
 app.get("/coursesdd", async function (req, res) {
@@ -206,7 +218,7 @@ app.get("/dashboard-details", async(req, res) => {
         const decoded = jwt.verify(toke, "vikas123");
 
         const [result]= await con.query(
-            `SELECT sp.StudentId,concat(sp.FirstName," ",sp.LastName) as FullName,sp.FirstName,rd.CourseName,rd.FinalFee,sp.RegistrationDate,pd.PaymentDate,pd.PaymentAmount,pd.PaymentMode FROM student_profile sp
+            `SELECT sp.StudentId,concat(sp.FirstName," ",sp.LastName) as FullName,sp.FirstName,sp.Profile_Image, rd.CourseName,rd.FinalFee,sp.RegistrationDate,pd.PaymentDate,pd.PaymentAmount,pd.PaymentMode FROM student_profile sp
             JOIN registration_details rd ON rd.StudentId = sp.StudentId JOIN payment_details pd ON pd.StudentId = sp.StudentId
             WHERE sp.StudentId = ?`,[decoded.id]
         )
@@ -313,6 +325,53 @@ app.post("/change-password", async (req, res) => {
 
                     res.send({ message: "Password updated successfully" });
                 }
+            }
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).send({ message: "Server error" });
+        }
+    }
+});
+
+//profileimage upload api
+app.post("/update-image", uploadImage.single("profile_image"), async (req, res) => {
+
+    const token = req.cookies.tokenn;
+
+    if (!token) {
+        res.status(401).send({ message: "Unauthorized" });
+    } 
+    else {
+        try {
+            const decoded = jwt.verify(token, "vikas123");
+
+            if (!req.file) {
+                res.status(400).send({ message: "No image uploaded" });
+            } 
+            else {
+
+                const filename = req.file.filename;
+                //1. GET OLD IMAGE NAME
+                const [result] = await con.query(
+                    "SELECT Profile_Image FROM student_profile WHERE StudentId = ?",
+                    [decoded.id]
+                );
+
+                const oldImage = result[0]?.Profile_Image;
+
+                //2. DELETE OLD IMAGE
+                if (oldImage) {
+                    const oldPath = path.join(__dirname, "ProfileImages", oldImage);
+                    if (fs.existsSync(oldPath)) {
+                        fs.unlinkSync(oldPath);
+                    }
+                }
+
+                //3. UPDATE NEW IMAGE
+                await con.query("UPDATE student_profile SET Profile_Image = ? WHERE StudentId = ?",[filename, decoded.id]);
+
+                res.status(200).send({ message: "Profilephoto updated successfully" });
             }
 
         } catch (err) {
