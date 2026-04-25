@@ -1,5 +1,6 @@
 const express = require("express");
 const mailer = require("nodemailer");
+const dotenv = require("dotenv");//dotenv
 const multer = require("multer");
 const mysql = require("mysql2");
 const cors = require("cors");
@@ -48,12 +49,13 @@ connection.connect(function(err){
 })
 const con = connection.promise();
 
-
+dotenv.config();
 const transporter = mailer.createTransport({
     service: "gmail",
     auth: {
-        user: "vikassontakke2002@gmail.com",      
-        pass: "tius gmss nlfn ferd"          
+        user: process.env.EMAIL_USER,      
+        pass: process.env.EMAIL_PASS
+          
     }
 });
 
@@ -125,8 +127,6 @@ app.post("/register", upload.single("aadharimage"), async (req, res) => {
             [d.branch,d.registrationdate,d.firstname,d.lastname,d.gender,d.birthdate,d.emailaddress,d.mobilenumber,d.whatsappnumber,d.parentname,d.parentnumber,d.aadharnumber,
             aadharfilename,d.localaddress,d.permanentaddress,password] 
         );
-        // function(err, result){
-        // if(err) throw err;
 
         const studentId = profileResult.insertId;
 
@@ -143,17 +143,11 @@ app.post("/register", upload.single("aadharimage"), async (req, res) => {
         // Registration
         await con.query("insert into registration_details(StudentId,CourseName,FeeAmount,Gst,TotalFee,Discount,FinalFee) values(?,?,?,?,?,?,?)",
             [studentId,d.coursename,d.feeamount,d.gst,d.totalfee,d.discount,d.finalfee]
-            // function(err){
-            //     if(err) throw err;
-            // }
         );
 
         // Payment
         await con.query("insert into payment_details(StudentId,PaymentDate,PaymentAmount,PaymentMode,PaymentDescription) values(?,?,?,?,?)",
             [studentId,d.paymentdate,d.paymentamount,d.paymentmode,d.paymentdescription]
-            // function(err){
-            //     if(err) throw err;
-            // }
         );
 
         // email sent
