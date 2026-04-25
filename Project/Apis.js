@@ -86,13 +86,13 @@ app.get("/coursesdd", async function (req, res) {
     }
 });
 
-//user existance in DB check-up
+//user/email existance in DB check-up
 app.post("/check-user", async (req, res) => {
     try {
         const d = req.body;
 
         const [result] = await con.query(
-            "SELECT * FROM student_profile WHERE EmailAddress=? OR MobileNumber=? OR AadharNumber=?",
+            "SELECT * FROM student_profile WHERE EmailAddress=? OR MobileNumber=?",
             [d.emailaddress, d.mobilenumber]
         );
 
@@ -382,7 +382,7 @@ app.post("/update-image", uploadImage.single("profile_image"), async (req, res) 
                 //3. UPDATE NEW IMAGE
                 await con.query("UPDATE student_profile SET Profile_Image = ? WHERE StudentId = ?",[filename, decoded.id]);
 
-                res.status(200).send({ message: "Profilephoto updated successfully" });
+                res.status(200).send({ message: "Profilephoto updated successfully",file:filename });
             }
 
         } catch (err) {
@@ -391,6 +391,92 @@ app.post("/update-image", uploadImage.single("profile_image"), async (req, res) 
         }
     }
 });
+
+//Video Tutorial component APIS
+//Get Modules API
+app.get("/api/modules", async (req, res) => {
+    const token = req.cookies.tokenn;
+
+    if (!token) {
+        res.status(401).send({ message: "Unauthorized" });
+    } 
+    else {
+        try {
+            const decoded = jwt.verify(token, "vikas123");
+
+            const [modules] = await con.query(`SELECT m.module_id, m.module_name FROM modules m
+                JOIN course_modules cm ON m.module_id = cm.module_id
+                JOIN courses c ON cm.course_id = c.course_id
+                JOIN registration_details rd ON rd.CourseName = c.course_name
+                WHERE rd.StudentId = ?
+                ORDER BY cm.module_order`, [decoded.id]
+            );
+
+            res.send(modules);
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).send({ message: "Error fetching modules" });
+        }
+    }
+});
+
+//Get Topics APi
+app.get("/api/topics/:moduleId", async (req, res) => {
+    const token = req.cookies.tokenn;
+
+    if (!token) {
+        return res.status(401).send({ message: "Unauthorized" });
+    } 
+    else {
+        try {
+            const decoded = jwt.verify(token, "vikas123");
+            const modId = req.params.moduleId;
+
+            const [topics] = await con.query(`SELECT t.topic_id, t.topic_name FROM topics t JOIN modules m ON t.module_id = m.module_id
+                JOIN course_modules cm ON m.module_id = cm.module_id JOIN courses c ON cm.course_id = c.course_id
+                JOIN registration_details rd ON rd.CourseName = c.course_name
+                WHERE rd.StudentId = ? AND m.module_id = ?
+                ORDER BY t.topic_order`, [decoded.id, modId]
+            );
+
+            res.send(topics);
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).send({ message: "Error fetching topics" });
+        }
+    }
+});
+
+//Get Videos Api
+app.get("/api/videos/:topicId", async (req, res) => {
+    const token = req.cookies.tokenn;
+
+    if (!token) {
+        return res.status(401).send({ message: "Unauthorized" });
+    } 
+    else {
+        try {
+            const decoded = jwt.verify(token, "vikas123");
+            const tId = req.params.topicId;
+
+            const [videos] = await con.query(`SELECT v.video_id, v.video_title, v.video_url FROM videos v JOIN topics t ON v.topic_id = t.topic_id
+                JOIN modules m ON t.module_id = m.module_id JOIN course_modules cm ON m.module_id = cm.module_id
+                JOIN courses c ON cm.course_id = c.course_id JOIN registration_details rd ON rd.CourseName = c.course_name
+                WHERE rd.StudentId = ? AND t.topic_id = ?
+                ORDER BY v.video_order`, [decoded.id, tId]
+            );
+
+            res.send(videos);
+
+        } catch (err) {
+            console.log(err);
+            res.status(500).send({ message: "Error fetching videos" });
+        }
+    }
+});
+
 app.listen(PORT,function(){
     console.log(`Server started on ${PORT}`)
 })
