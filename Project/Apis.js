@@ -471,6 +471,25 @@ app.get("/api/videos/:topicId", async (req, res) => {
     }
 });
 
+//Payment-details Api
+app.get("/api/payment-details",async(req,res)=>{
+    const token = req.cookies.tokenn
+
+    if(!token){
+        res.status(401).send({message : "Unauthorized"})
+    }
+    else{
+        try{
+            const tokenverify = jwt.verify(token,"vikas123")
+
+            const [payments] = await con.query(`select StudentId, PaymentDate, PaymentAmount, PaymentMode, PaymentDescription from payment_details where StudentId=?`,[tokenverify.id]);
+            res.send(payments);
+        }catch(err){
+            console.log(err);
+            res.status(500).send({ message: "Error fetching paymet details" });
+        }
+    }
+})
 app.listen(PORT,function(){
     console.log(`Server started on ${PORT}`)
 })
