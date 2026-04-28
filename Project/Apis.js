@@ -1,6 +1,6 @@
 const express = require("express");
 const mailer = require("nodemailer");
-const dotenv = require("dotenv");//dotenv
+const dotenvv = require("dotenv");//dotenv
 const multer = require("multer");
 const mysql = require("mysql2");
 const cors = require("cors");
@@ -9,8 +9,10 @@ const fs = require("fs");
 const jwt = require("jsonwebtoken");
 const cookieParser = require("cookie-parser");
 
+dotenvv.config();
+
 // For developers cloning this project:
-// Upload folders are gitignored, so they are not present in the repo.
+// file Upload folders are gitignored, so they are not present in the repo.
 // Create them at runtime to avoid file upload errors.
 if (!fs.existsSync("ProfileImages")) {
     fs.mkdirSync("ProfileImages");
@@ -33,10 +35,10 @@ app.use(cookieParser());
 app.use("/profile-image", express.static("ProfileImages"));
 
 const connection = mysql.createConnection({
-    host:"localhost",
-    user:"root",
-    password:"tiger",
-    database:"studentdb"
+    host:process.env.DB_HOST,
+    user:process.env.DB_USER,
+    password:process.env.DB_PASSWORD,
+    database:process.env.DB_NAME
 })
 
 connection.connect(function(err){
@@ -49,7 +51,6 @@ connection.connect(function(err){
 })
 const con = connection.promise();
 
-dotenv.config();
 const transporter = mailer.createTransport({
     service: "gmail",
     auth: {
@@ -181,7 +182,7 @@ app.post("/login", async (req, res) => {
 
         const token = jwt.sign(
             { id: user.StudentId, email: user.EmailAddress },
-            "vikas123",
+            process.env.JWT_SECRET,
             { expiresIn: "30d" }
         );
         res.cookie("tokenn", token, {
@@ -206,7 +207,7 @@ app.get("/verify", (req, res) => {
     }
 
     try {
-        jwt.verify(token, "vikas123");
+        jwt.verify(token, process.env.JWT_SECRET);
         res.status(200).send("Valid user");
     } catch (err) {
         res.status(401).send("Invalid token");
@@ -220,7 +221,7 @@ app.get("/dashboard-details", async(req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(toke, "vikas123");
+        const decoded = jwt.verify(toke, process.env.JWT_SECRET);
 
         const [result]= await con.query(
             `SELECT sp.StudentId,concat(sp.FirstName," ",sp.LastName) as FullName,sp.FirstName,sp.Profile_Image, rd.CourseName,rd.FinalFee,sp.RegistrationDate,pd.PaymentDate,pd.PaymentAmount,pd.PaymentMode FROM student_profile sp
@@ -242,7 +243,7 @@ app.get("/student-details", async(req,res)=>{
     }
 
     try{
-        const decoded = jwt.verify(Token, "vikas123"); 
+        const decoded = jwt.verify(Token, process.env.JWT_SECRET); 
         const [result] = await con.query(
             `select sp.StudentId, sp.FirstName,sp.LastName,sp.Gender,sq.QId,sq.QualificationName,sp.EmailAddress,DATE_FORMAT(sp.BirthDate, '%Y-%m-%d') as BirthDate,sp.MobileNumber,
             sp.WhatsappNumber,sp.ParentName,sp.ParentNumber,sp.AadharNumber,sp.LocalAddress,sp.PermanentAddress 
@@ -264,7 +265,7 @@ app.put("/update-profile", async (req, res) => {
     }
 
     try {
-        const decoded = jwt.verify(Token, "vikas123");
+        const decoded = jwt.verify(Token, process.env.JWT_SECRET);
 
         const d = req.body;
 
@@ -303,7 +304,7 @@ app.post("/change-password", async (req, res) => {
     } 
     else {
         try {
-            const decoded = jwt.verify(token, "vikas123");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             const oldPassword = req.body.oldPassword;
             const newPassword = req.body.newPassword;
@@ -349,7 +350,7 @@ app.post("/update-image", uploadImage.single("profile_image"), async (req, res) 
     } 
     else {
         try {
-            const decoded = jwt.verify(token, "vikas123");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             if (!req.file) {
                 res.status(400).send({ message: "No image uploaded" });
@@ -396,7 +397,7 @@ app.get("/api/modules", async (req, res) => {
     } 
     else {
         try {
-            const decoded = jwt.verify(token, "vikas123");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
             const [modules] = await con.query(`SELECT m.module_id, m.module_name FROM modules m
                 JOIN course_modules cm ON m.module_id = cm.module_id
@@ -424,7 +425,7 @@ app.get("/api/topics/:moduleId", async (req, res) => {
     } 
     else {
         try {
-            const decoded = jwt.verify(token, "vikas123");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const modId = req.params.moduleId;
 
             const [topics] = await con.query(`SELECT t.topic_id, t.topic_name FROM topics t JOIN modules m ON t.module_id = m.module_id
@@ -452,7 +453,7 @@ app.get("/api/videos/:topicId", async (req, res) => {
     } 
     else {
         try {
-            const decoded = jwt.verify(token, "vikas123");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const tId = req.params.topicId;
 
             const [videos] = await con.query(`SELECT v.video_id, v.video_title, v.video_url FROM videos v JOIN topics t ON v.topic_id = t.topic_id
@@ -480,7 +481,7 @@ app.get("/api/payment-details",async(req,res)=>{
     }
     else{
         try{
-            const tokenverify = jwt.verify(token,"vikas123")
+            const tokenverify = jwt.verify(token,process.env.JWT_SECRET)
 
             const [payments] = await con.query(`select StudentId, PaymentDate, PaymentAmount, PaymentMode, PaymentDescription from payment_details where StudentId=?`,[tokenverify.id]);
             res.send(payments);
